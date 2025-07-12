@@ -20,6 +20,7 @@ jobs:
       before_install:
         - pip install pytest
       script:
+        - echo "Using port: $CODE_NAME"
         - PYTHONPATH=./app pytest
 
     - stage: deploy
