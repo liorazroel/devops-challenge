@@ -17,3 +17,6 @@ I implemented unit tests using `pytest` and ensured they executed correctly in t
 
 ### 6. Travis CI Pipeline
 Finally, I created a `.travis.yml` file to automate the CI/CD process. This pipeline runs the tests, builds the Docker image, and pushes it to Docker Hub upon successful execution.
+
+### 7. CloudFormation Deployment
+To deploy the Flask application on AWS, I wrote a self-contained CloudFormation template. This template creates a new VPC, subnet, internet gateway, route table, security group (allowing SSH and 5000 for flask server app), and an EC2 instance. The EC2 instance pulls the Flask app image from Docker Hub and runs it using Docker. The output includes the public URL to access the Flask server.

@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Launch EC2 with Flask app from Docker Hub inside a new VPC
+Description: Deploy Flask app from Docker Hub to EC2 in a given VPC
 
 Parameters:
   KeyName:
@@ -7,8 +7,16 @@ Parameters:
     Type: AWS::EC2::KeyPair::KeyName
 
   DockerImage:
-    Description: Docker Hub image name (e.g. youruser/flask-app:latest)
+    Description: Docker Hub image (e.g. youruser/flask-app:latest)
     Type: String
+
+  VpcId:
+    Description: VPC where the EC2 instance will be deployed
+    Type: AWS::EC2::VPC::Id
+
+  SubnetId:
+    Description: Subnet in the VPC to launch the EC2 instance
+    Type: AWS::EC2::Subnet::Id
 
   InstanceType:
     Type: String
@@ -22,62 +30,11 @@ Parameters:
 
 Resources:
 
-  # VPC
-  MyVPC:
-    Type: AWS::EC2::VPC
-    Properties:
-      CidrBlock: 10.0.0.0/16
-      EnableDnsSupport: true
-      EnableDnsHostnames: true
-      Tags:
-        - Key: Name
-          Value: FlaskVPC
-
-  # Internet Gateway
-  InternetGateway:
-    Type: AWS::EC2::InternetGateway
-
-  AttachGateway:
-    Type: AWS::EC2::VPCGatewayAttachment
-    Properties:
-      VpcId: !Ref MyVPC
-      InternetGatewayId: !Ref InternetGateway
-
-  # Route Table
-  RouteTable:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId: !Ref MyVPC
-
-  PublicRoute:
-    Type: AWS::EC2::Route
-    DependsOn: AttachGateway
-    Properties:
-      RouteTableId: !Ref RouteTable
-      DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref InternetGateway
-
-  # Subnet
-  PublicSubnet:
-    Type: AWS::EC2::Subnet
-    Properties:
-      VpcId: !Ref MyVPC
-      CidrBlock: 10.0.1.0/24
-      MapPublicIpOnLaunch: true
-      AvailabilityZone: !Select [0, !GetAZs '']
-
-  SubnetRouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      SubnetId: !Ref PublicSubnet
-      RouteTableId: !Ref RouteTable
-
-  # Security Group
-  FlaskSG:
+  FlaskSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Allow SSH and Flask traffic
-      VpcId: !Ref MyVPC
+      GroupDescription: Allow SSH (22) and Flask (5000)
+      VpcId: !Ref VpcId
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 22
@@ -88,31 +45,30 @@ Resources:
           ToPort: 5000
           CidrIp: 0.0.0.0/0
 
-  # EC2 Instance
-  FlaskEC2:
+  FlaskInstance:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: !Ref InstanceType
       KeyName: !Ref KeyName
-      ImageId: ami-0c2b8ca1dad447f8a  # Amazon Linux 2 (us-east-1) — change for your region
-      SubnetId: !Ref PublicSubnet
+      SubnetId: !Ref SubnetId
       SecurityGroupIds:
-        - !Ref FlaskSG
+        - !Ref FlaskSecurityGroup
+      ImageId: ami-0c2b8ca1dad447f8a  # Amazon Linux 2 (us-east-1). Update if needed.
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
           yum update -y
           amazon-linux-extras install docker -y
           service docker start
-          usermod -a -G docker ec2-user
+          usermod -aG docker ec2-user
           docker pull ${DockerImage}
           docker run -d -p 5000:5000 ${DockerImage}
 
 Outputs:
   InstancePublicIP:
-    Description: Public IP of EC2 instance
-    Value: !GetAtt FlaskEC2.PublicIp
+    Description: Public IP of the EC2 instance
+    Value: !GetAtt FlaskInstance.PublicIp
 
-  FlaskAppURL:
-    Description: Flask app URL
-    Value: !Sub "http://${FlaskEC2.PublicIp}:5000"
+  AppURL:
+    Description: Flask App URL
+    Value: !Sub "http://${FlaskInstance.PublicIp}:5000"
