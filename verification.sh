@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Run Project
-docker-compose -f example/docker-compose.yml up --build -d
+docker-compose -f docker-compose.yml up --build -d
 sleep 5
 
 # Query results
