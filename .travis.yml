@@ -13,4 +13,5 @@ before_install:
   - pip install pytest
 
 script:
+  - pip3 freeze
   - pytest tests/
