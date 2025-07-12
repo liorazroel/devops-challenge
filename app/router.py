@@ -1,4 +1,6 @@
 import os
+
+from botocore.exceptions import ClientError
 from flask import jsonify,Blueprint
 import logging
 from dotenv import load_dotenv
@@ -26,12 +28,24 @@ def get_dynamodb_attribute(table_name, key_name, key_value):
     """
     session = init_aws_session()
     dynamodb = session.resource('dynamodb')
+
     logger.info(f"Retrieving from table '{table_name}' where {key_name} = '{key_value}'")
 
     table = dynamodb.Table(table_name)
-    response = table.get_item(Key={key_name: key_value})
 
-    return response
+    try:
+        response = table.get_item(Key={key_name: key_value})
+        return response
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'UnrecognizedClientException':
+            logger.error("Invalid AWS credentials or security token.")
+            return {"error": "Invalid AWS credentials or security token"}
+        else:
+            logger.error(f"ClientError: {e}")
+            return {"error": str(e)}
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
+        return {"error": f"Unexpected error: {str(e)}"}
 
 
 def init_aws_session():
@@ -71,8 +85,11 @@ def get_secret_code(code_name):
 @routes.route('/secret')
 def extract_secret():
     logger.info(f"Route '/secret' get the secret code for codeName = {os.getenv('CODE_NAME')}")
+    secret_code = get_secret_code(os.getenv('CODE_NAME'))
+    if secret_code == 404:
+        return jsonify({"error": "Secret code not found"}), 404
     return jsonify({
-        "secret_code": get_secret_code(os.getenv('CODE_NAME'))
+        "secret_code": secret_code
     })
 
 @routes.route('/health')
