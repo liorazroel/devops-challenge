@@ -39,10 +39,27 @@ LINK_TO_DOCKER_HUB=<your_docker_hub_link>
 ```
 ### Run the Flask Application
 ```bash
-python app/app.py
+venv/bin/python app/app.py 
 ```
 
 ### Run the pytest
 ```bash
+export PYTHONPATH=./app
+pytest
+
+### or
 PYTHONPATH=./app pytest
+```
+
+### 🐳 Run with Docker
+To run the application using Docker, follow these steps:
+Build the Docker image:
+   ```bash
+   docker build -t devops-challenge-app .
+   docker run --env-file .env -p 5000:5000 devops-challenge-app
+   ```
+
+### Use Docker Compose:
+```bash
+docker-compose up
 ```
