@@ -1,13 +1,16 @@
-dist: jammy
 language: python
 python:
   - "3.12"
 services:
   - docker
 
-install:
+
+branches:
+  only:
+    - master
+
+before_install:
   - pip install pytest
 
 script:
-  - whoami
-  - pytest test/
+  - pytest tests/
