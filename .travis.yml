@@ -20,7 +20,7 @@ jobs:
       before_install:
         - pip install pytest
       script:
-        - pytest
+        - PYTHONPATH=./app pytest
 
     - stage: deploy
       name: Deploy to Production
