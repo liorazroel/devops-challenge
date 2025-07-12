@@ -1,3 +1,4 @@
+
 language: python
 python:
   - "3.12"
@@ -9,24 +10,31 @@ branches:
   only:
     - master
 
+stages:
+  - test
+  - build and deploy
+
 env:
   global:
     - DOCKER_REPOSITORY=devops-challenge-app
     - COMMIT_TAG=${TRAVIS_COMMIT:0:7}
 
-install:
-  - pip install -r requirements.txt
-  - pip install pytest
+jobs:
+  include:
+    - stage: test
+      name: Run Unit Tests
+      before_install:
+        - pip install pytest
+      script:
+        - PYTHONPATH=./app pytest
 
-test:
-  - PYTHONPATH=./app pytest
-
-build:
-  - docker build -t $DOCKER_USERNAME/devops-challenge .
-  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-
-deploy:
-    - docker tag "$DOCKER_REPOSITORY:latest" "$DOCKER_USERNAME/$DOCKER_REPOSITORY:latest"
-    - docker tag "$DOCKER_REPOSITORY:latest" "$DOCKER_USERNAME/$DOCKER_REPOSITORY:$COMMIT_TAG-TRAVIS_BUILD_NUMBER"
-    - docker push "$DOCKER_USERNAME/$DOCKER_REPOSITORY:latest"
-    - docker push "$DOCKER_USERNAME/$DOCKER_REPOSITORY:$COMMIT_TAG-TRAVIS_BUILD_NUMBER"
+    - stage: build and deploy
+      name: Build and deploy Application
+      install: skip
+      script:
+        - docker build -t $DOCKER_REPOSITORY .
+        - cho "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+        - docker tag $DOCKER_REPOSITORY:latest $DOCKER_USERNAME/$DOCKER_REPOSITORY:latest
+        - docker tag $DOCKER_REPOSITORY:latest $DOCKER_USERNAME/$DOCKER_REPOSITORY:$COMMIT_TAG
+        - docker push $DOCKER_USERNAME/$DOCKER_REPOSITORY:latest
+        - docker push $DOCKER_USERNAME/$DOCKER_REPOSITORY:$COMMIT_TAG
