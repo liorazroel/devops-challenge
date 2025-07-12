@@ -1,17 +1,28 @@
 language: python
 python:
   - "3.12"
+
 services:
   - docker
-
 
 branches:
   only:
     - master
 
-before_install:
-  - pip install pytest
+stages:
+  - test
+  - deploy
 
-script:
-  - pip3 freeze
-  - pytest tests/
+jobs:
+  include:
+    - stage: test
+      name: Run Unit Tests
+      before_install:
+        - pip install pytest
+      script:
+        - pytest
+
+    - stage: deploy
+      name: Deploy to Production
+      script:
+        - echo "Deploying application..."
