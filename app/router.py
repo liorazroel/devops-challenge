@@ -56,7 +56,7 @@ def get_secret_code(code_name):
     :return: the secret code associated with the code name, or 'NOT_FOUND' if it does not exist.
     """
     dynamodb_attribute = get_dynamodb_attribute(
-        table_name=os.getenv('DYNAMODB_TABLE_NAME'),
+        table_name=os.getenv('DYNAMODB_TABLE_NAME', "devops-challenge"),
         key_name='codeName',
         key_value=code_name,
         attribute_name='secretCode'
