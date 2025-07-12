@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 routes = Blueprint('api', __name__)
 
-def get_dynamodb_attribute(table_name, key_name, key_value, attribute_name):
+def get_dynamodb_attribute(table_name, key_name, key_value):
     """
     Retrieves a specific attribute from a DynamoDB table using the given key.
 
@@ -26,7 +26,7 @@ def get_dynamodb_attribute(table_name, key_name, key_value, attribute_name):
     """
     session = init_aws_session()
     dynamodb = session.resource('dynamodb')
-    logger.info(f"Retrieving '{attribute_name}' from table '{table_name}' where {key_name} = '{key_value}'")
+    logger.info(f"Retrieving from table '{table_name}' where {key_name} = '{key_value}'")
 
     table = dynamodb.Table(table_name)
     response = table.get_item(Key={key_name: key_value})
@@ -58,8 +58,7 @@ def get_secret_code(code_name):
     dynamodb_attribute = get_dynamodb_attribute(
         table_name=os.getenv('DYNAMODB_TABLE_NAME', "devops-challenge"),
         key_name='codeName',
-        key_value=code_name,
-        attribute_name='secretCode'
+        key_value=code_name
     )
 
     if 'Item' in dynamodb_attribute:
