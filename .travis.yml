@@ -11,7 +11,13 @@ branches:
 
 stages:
   - test
+  - build
   - deploy
+
+env:
+  global:
+    - DOCKER_REPOSITORY=devops-challenge-app
+    - COMMIT_TAG=${TRAVIS_COMMIT:0:7}
 
 jobs:
   include:
@@ -20,10 +26,18 @@ jobs:
       before_install:
         - pip install pytest
       script:
-        - echo $CODE_NAME
         - PYTHONPATH=./app pytest
 
-    - stage: deploy
-      name: Deploy to Production
+    - stage: build
+      name: Build Application
       script:
-        - echo "Deploying application..."
+        - docker build -t $DOCKER_REPOSITORY .
+
+    - stage: deploy
+      name: Deploy to Docker Hub
+      script:
+        - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+        - docker tag "$DOCKER_REPOSITORY:latest" "$DOCKER_USERNAME/$DOCKER_REPOSITORY:latest"
+        - docker tag "$DOCKER_REPOSITORY:latest" "$DOCKER_USERNAME/$DOCKER_REPOSITORY:$COMMIT_TAG-TRAVIS_BUILD_NUMBER"
+        - docker push "$DOCKER_USERNAME/$DOCKER_REPOSITORY:latest"
+        - docker push "$DOCKER_USERNAME/$DOCKER_REPOSITORY:$COMMIT_TAG-TRAVIS_BUILD_NUMBER"
