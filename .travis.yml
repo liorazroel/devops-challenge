@@ -11,8 +11,7 @@ branches:
 
 stages:
   - test
-  - build
-  - deploy
+  - build and deploy
 
 env:
   global:
@@ -28,15 +27,11 @@ jobs:
       script:
         - PYTHONPATH=./app pytest
 
-    - stage: build
-      name: Build Application
+    - stage: build and deploy
+      name: Build and deploy Application
       script:
         - docker build -t $DOCKER_REPOSITORY .
-
-    - stage: deploy
-      name: Deploy to Docker Hub
-      script:
-        - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+        - cho "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
         - docker tag "$DOCKER_REPOSITORY:latest" "$DOCKER_USERNAME/$DOCKER_REPOSITORY:latest"
         - docker tag "$DOCKER_REPOSITORY:latest" "$DOCKER_USERNAME/$DOCKER_REPOSITORY:$COMMIT_TAG-TRAVIS_BUILD_NUMBER"
         - docker push "$DOCKER_USERNAME/$DOCKER_REPOSITORY:latest"
